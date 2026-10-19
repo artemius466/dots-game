@@ -69,17 +69,20 @@ class Store implements GameStore {
   private listeners = new Set<() => void>();
   private toastTimer: ReturnType<typeof setTimeout> | null = null;
 
-  subscribe(fn: () => void): () => void {
+  // Arrow-function instance properties so every method stays bound to the
+  // singleton store even when destructured (e.g. `const { navigate } = useGameStore()`)
+  // and called as a free function -- a plain class method would lose `this`.
+  subscribe = (fn: () => void): (() => void) => {
     this.listeners.add(fn);
     return () => {
       this.listeners.delete(fn);
     };
   }
-  private emit() {
+  private emit = () => {
     for (const fn of this.listeners) fn();
   }
 
-  private connect() {
+  private connect = () => {
     if (this.socket || WS_BASE === "") return;
     this.connecting = true;
     this.emit();
@@ -119,14 +122,20 @@ class Store implements GameStore {
       this.config = room.config;
       if (room.gameOver) {
         this.screen = "gameover";
-      } else {
+      } else if (room.activePlayerId) {
+        // The game only counts as started once the host has started it: the
+        // server sets activePlayerId in startGame()/restartGame(). Until then
+        // we stay on the "lobby" screen so room codes and the player list stay
+        // visible (WaitingLobby returns null once screen != "lobby").
         this.screen = "playing";
       }
+      // else: keep the current screen (e.g. "lobby") — game hasn't started yet.
       this.emit();
     });
 
     socket.on("timer", (t: { remaining: number; activePlayerId: string | null }) => {
-      this.remainingMs = t.remaining;
+      // Server sends `remaining` in SECONDS; the store field is milliseconds.
+      this.remainingMs = t.remaining * 1000;
       this.activePlayerId = t.activePlayerId;
       this.emit();
     });
@@ -144,7 +153,7 @@ class Store implements GameStore {
     this.emit();
   }
 
-  setNickname(name: string) {
+  setNickname = (name: string) => {
     const trimmed = name.trim();
     this.nickname = trimmed;
     try {
@@ -155,19 +164,19 @@ class Store implements GameStore {
     this.emit();
   }
 
-  navigate(screen: Screen) {
+  navigate = (screen: Screen) => {
     this.screen = screen;
     this.error = null;
     this.emit();
   }
 
-  createRoom(config: RoomConfig) {
+  createRoom = (config: RoomConfig) => {
     this.connect();
     const nick = this.nickname || "Player";
     this.socket?.emit("createRoom", { nickname: nick, config });
   }
 
-  joinRoom(rawCode: string) {
+  joinRoom = (rawCode: string) => {
     const code = rawCode.toUpperCase().replace(/[^A-Z0-9]/g, "");
     if (code.length !== ROOM_CODE_LENGTH) {
       this.handleServerError(`Room code must be ${ROOM_CODE_LENGTH} characters`);
@@ -178,25 +187,25 @@ class Store implements GameStore {
     this.socket?.emit("joinRoom", { nickname: nick, code });
   }
 
-  startGame() {
+  startGame = () => {
     this.socket?.emit("startGame", this.code ?? "");
   }
 
-  placeDot(r: number, c: number) {
+  placeDot = (r: number, c: number) => {
     if (!this.code) return;
     this.socket?.emit("placeDot", { r, c });
   }
 
-  restartGame() {
+  restartGame = () => {
     this.socket?.emit("restartGame", this.code ?? "");
   }
 
-  leaveRoom() {
+  leaveRoom = () => {
     this.socket?.emit("leaveRoom", this.code ?? "");
     this.reset();
   }
 
-  reset() {
+  reset = () => {
     this.me = null;
     this.code = null;
     this.config = null;
@@ -205,14 +214,15 @@ class Store implements GameStore {
     this.activePlayerId = null;
     this.remainingMs = 60_000;
     this.screen = "menu";
+    this.emit();
   }
 
-  handleServerError(msg: string) {
+  handleServerError = (msg: string) => {
     this.error = msg;
     this.flashToast(msg);
   }
 
-  flashToast(msg: string) {
+  flashToast = (msg: string) => {
     if (this.toastTimer) clearTimeout(this.toastTimer);
     this.toast = msg;
     this.emit();
@@ -229,7 +239,14 @@ store.connect();
 const GameContext = createContext<GameStore>(store);
 
 export function useGameStore(): GameStore {
-  return useContext(GameContext);
+  const store = useContext(GameContext);
+  // The store is a singleton, so reading it via useContext alone never
+  // triggers a re-render. Subscribe so every mutation re-renders consumers.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    return store.subscribe(() => setTick((n) => n + 1));
+  }, [store]);
+  return store;
 }
 
 // Subscribes a component to store changes.

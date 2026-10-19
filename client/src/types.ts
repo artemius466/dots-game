@@ -1,4 +1,5 @@
 import { COLOR_HEX } from "./lib/format";
+import { PLAYER_COLORS } from "./constants";
 import type { PlayerColor } from "./constants";
 
 // These mirror the server's serialized room shape (see server/src/socketService.ts).

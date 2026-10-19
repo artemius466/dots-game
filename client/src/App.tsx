@@ -23,11 +23,10 @@ export default function App() {
 
       <header className="px-5 py-3 flex items-center justify-between border-b border-slate-800">
         <span className="text-lg font-black tracking-tight text-white">
-          <span className="text-red-400">Т</span>
-          <span className="text-blue-400">о</span>
-          <span className="text-green-400">ч</span>
-          <span className="text-yellow-400">к</span>
-          <span className="text-red-400">и</span>
+          <span className="text-red-400">D</span>
+          <span className="text-blue-400">o</span>
+          <span className="text-green-400">t</span>
+          <span className="text-yellow-400">s</span>
         </span>
         {connecting && (
           <span className="text-xs text-amber-300 flex items-center gap-1.5">

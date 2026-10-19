@@ -15,7 +15,7 @@ export default function HostRoomConfig() {
   const { navigate, createRoom } = useGameStore();
   const [draft, setDraft] = useState<Draft>({
     maxPlayers: 2,
-    grid: GRID_OPTIONS[0].grid,
+    grid: { rows: GRID_OPTIONS[0].rows, cols: GRID_OPTIONS[0].cols },
     mode: "20",
     modeLabel: "20 dots",
   });

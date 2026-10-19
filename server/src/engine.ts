@@ -5,6 +5,18 @@ const DIRS = [
   [-1, -1], [-1, 1], [1, -1], [1, 1],
 ];
 
+// Orthogonal (4-way) neighbors. Used by the outside flood fill so it cannot
+// leak through the diagonal corners of a ring. An 8-connected ring (see
+// componentOf) with a 4-way background is a sealed boundary, so an open ring
+// like
+//   _*_
+//   *@*      <- the center is captured
+//   *_
+// encloses its center even though its diagonal corners are empty.
+const DIRS_4 = [
+  [-1, 0], [1, 0], [0, -1], [0, 1],
+];
+
 // ---------------------------------------------------------------------------
 // Room & player helpers
 // ---------------------------------------------------------------------------
@@ -93,8 +105,11 @@ function floodInterior(
   while (frontier.length) {
     const [cr, cc] = frontier.shift()!.split(",").map(Number);
     // Expand neighbors; only guard the neighbor coordinates so padded
-    // "outside" cells still flood into the grid's border cells.
-    for (const [dr, dc] of DIRS) {
+    // "outside" cells still flood into the grid's border cells. Flood with
+    // orthogonal (4-way) moves so an outside cell can never slip through the
+    // empty diagonal corners of an 8-connected ring. This is what lets an open
+    // ring (diamond) capture, while the classic filled ring keeps capturing too.
+    for (const [dr, dc] of DIRS_4) {
       const nr = cr + dr;
       const nc = cc + dc;
       if (nr < 0 || nc < 0 || nr >= rows || nc >= cols) continue;
@@ -257,8 +272,6 @@ function activePlayers(room: Room): Player[] {
 export function advanceTurn(room: Room): void {
   const alive = activePlayers(room);
   if (alive.length === 0) return;
-
-  if (room.activePlayerId && alive.some((p) => p.id === room.activePlayerId)) return;
 
   // Find the next active player cyclically after the current one.
   const order = room.players;

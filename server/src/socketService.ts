@@ -64,7 +64,7 @@ export function attachServer(io: IOServer, rooms: RoomManager) {
       }
       CODE_TO_ROOM.set(socket.id, code);
       socket.join(code);
-      io.to(code).emit("roomJoined", { code, me: socket.id, player: res });
+      socket.emit("roomJoined", { code, me: socket.id, player: res });
       broadcastState(room);
     });
 
@@ -81,7 +81,7 @@ export function attachServer(io: IOServer, rooms: RoomManager) {
       }
       CODE_TO_ROOM.set(socket.id, code);
       socket.join(code);
-      io.to(code).emit("roomJoined", { code, me: socket.id, player: res });
+      socket.emit("roomJoined", { code, me: socket.id, player: res });
       broadcastState(room);
     });
 

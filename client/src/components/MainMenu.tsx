@@ -13,11 +13,10 @@ export default function MainMenu() {
     <div className="w-full max-w-md mx-auto space-y-8">
       <div className="text-center space-y-2">
         <h1 className="text-5xl font-black tracking-tight">
-          <span className="text-red-400">Т</span>
-          <span className="text-blue-400">о</span>
-          <span className="text-green-400">ч</span>
-          <span className="text-yellow-400">к</span>
-          <span className="text-red-400">и</span>
+          <span className="text-red-400">D</span>
+          <span className="text-blue-400">o</span>
+          <span className="text-green-400">t</span>
+          <span className="text-yellow-400">s</span>
         </h1>
         <p className="text-slate-400">Dots — free-for-all capture game</p>
       </div>

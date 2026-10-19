@@ -23,7 +23,7 @@ export default function GameBoard() {
     const onResize = () => {
       const availW = window.innerWidth;
       const availH = window.innerHeight - 40; // leave room for the HUD
-      const next = computeBoardLayout(room?.grid.rows ?? 20, room?.grid.cols ?? 20, availW, availH);
+      const next = computeBoardLayout(room?.config.grid.rows ?? 20, room?.config.grid.cols ?? 20, availW, availH);
       el.style.width = next.width + "px";
       el.style.height = next.height + "px";
       el.width = Math.round(next.width * next.dpr);
@@ -46,7 +46,7 @@ export default function GameBoard() {
     if (!el || !layout || !room || !me) return;
     const ctx = el.getContext("2d");
     if (!ctx) return;
-    draw(ctx, room, me.id, layout, hover);
+    draw(ctx, room, layout, hover, lastDot, lastDotKey);
   }, [room, layout, hover, me]);
 
   if (!room || !me) return null;
@@ -59,8 +59,10 @@ export default function GameBoard() {
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!layout || !room) return;
+    const el = canvasRef.current;
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const pt = pixelToPoint(layout, room.grid.rows, room.grid.cols, e.clientX - rect.left, e.clientY - rect.top);
+    const pt = pixelToPoint(layout, room.config.grid.rows, room.config.grid.cols, e.clientX - rect.left, e.clientY - rect.top);
     const free = pt && !occupied.has(`${pt.r},${pt.c}`) && isMyTurn && !gameOver;
     setHover(free ? pt : null);
   };
@@ -68,8 +70,10 @@ export default function GameBoard() {
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!layout || !room) return;
     if (!isMyTurn || gameOver) return;
+    const el = canvasRef.current;
+    if (!el) return;
     const rect = el.getBoundingClientRect();
-    const pt = pixelToPoint(layout, room.grid.rows, room.grid.cols, e.clientX - rect.left, e.clientY - rect.top);
+    const pt = pixelToPoint(layout, room.config.grid.rows, room.config.grid.cols, e.clientX - rect.left, e.clientY - rect.top);
     if (pt && !occupied.has(`${pt.r},${pt.c}`)) {
       placeDot(pt.r, pt.c);
       setHover(null);
@@ -100,7 +104,7 @@ export default function GameBoard() {
 
 // --- Drawing ---------------------------------------------------------------
 
-function draw(ctx: CanvasRenderingContext2D, room: SerializedRoom, myId: string, layout: BoardLayout, hover: { r: number; c: number } | null) {
+function draw(ctx: CanvasRenderingContext2D, room: SerializedRoom, layout: BoardLayout, hover: { r: number; c: number } | null, lastDot: ServerDot | null, lastDotKey: string) {
   ctx.clearRect(0, 0, layout.width, layout.height);
 
   const dots = room.dots;
@@ -110,15 +114,15 @@ function draw(ctx: CanvasRenderingContext2D, room: SerializedRoom, myId: string,
   ctx.lineWidth = 1;
   ctx.strokeStyle = "#334155";
   ctx.beginPath();
-  for (let r = 0; r < room.grid.rows; r++) {
+  for (let r = 0; r < room.config.grid.rows; r++) {
     const a = pointToPixel(layout, r, 0);
-    const b = pointToPixel(layout, r, room.grid.cols - 1);
+    const b = pointToPixel(layout, r, room.config.grid.cols - 1);
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
   }
-  for (let c = 0; c < room.grid.cols; c++) {
+  for (let c = 0; c < room.config.grid.cols; c++) {
     const a = pointToPixel(layout, 0, c);
-    const b = pointToPixel(layout, room.grid.rows - 1, c);
+    const b = pointToPixel(layout, room.config.grid.rows - 1, c);
     ctx.moveTo(a.x, a.y);
     ctx.lineTo(b.x, b.y);
   }
@@ -126,8 +130,8 @@ function draw(ctx: CanvasRenderingContext2D, room: SerializedRoom, myId: string,
 
   // Empty grid points (faint).
   ctx.fillStyle = "#1e293b";
-  for (let r = 0; r < room.grid.rows; r++) {
-    for (let c = 0; c < room.grid.cols; c++) {
+  for (let r = 0; r < room.config.grid.rows; r++) {
+    for (let c = 0; c < room.config.grid.cols; c++) {
       if (!occupied.has(`${r},${c}`)) {
         const p = pointToPixel(layout, r, c);
         ctx.beginPath();
@@ -225,11 +229,10 @@ function Hud({
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
           <span className="text-xl font-black tracking-tight">
-            <span className="text-red-400">Т</span>
-            <span className="text-blue-400">о</span>
-            <span className="text-green-400">ч</span>
-            <span className="text-yellow-400">к</span>
-            <span className="text-red-400">и</span>
+            <span className="text-red-400">D</span>
+            <span className="text-blue-400">o</span>
+            <span className="text-green-400">t</span>
+            <span className="text-yellow-400">s</span>
           </span>
         </div>
         <div className="flex items-center gap-3 text-sm text-slate-300">
