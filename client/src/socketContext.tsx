@@ -8,8 +8,28 @@ import type {
   SerializedRoom,
 } from "./types";
 
-const WS_BASE =
-  import.meta.env.VITE_WS_URL || (import.meta.env.DEV ? "http://localhost:4000" : "");
+// Runtime env injected by the nginx container at startup (see client/entrypoint.sh):
+// the browser fetches /env.json to learn where the server lives, so the WebSocket
+// address can change without rebuilding the image. Falls back to the build-time
+// VITE_WS_URL / local dev default when no config is served.
+let __runtimeEnv: Record<string, string> | null = null;
+let __envLoaded = false;
+
+const loadRuntimeEnv = async (): Promise<void> => {
+  if (__envLoaded) return;
+  __envLoaded = true;
+  try {
+    const res = await fetch("/env.json", { cache: "no-store" });
+    if (res.ok) __runtimeEnv = await res.json();
+  } catch {
+    /* not served (e.g. plain `npm run preview`) -> use built-in defaults */
+  }
+};
+
+const resolveWsBase = (): string =>
+  (__runtimeEnv && __runtimeEnv.VITE_WS_URL) ||
+  import.meta.env.VITE_WS_URL ||
+  (import.meta.env.DEV ? "http://localhost:4000" : "");
 
 type Screen = "menu" | "host" | "join" | "lobby" | "playing" | "gameover";
 
@@ -82,11 +102,15 @@ class Store implements GameStore {
     for (const fn of this.listeners) fn();
   }
 
-  private connect = () => {
-    if (this.socket || WS_BASE === "") return;
+  private connect = async () => {
+    // Learn the server address at runtime (injected by the container) so it can
+    // change without rebuilding the image.
+    await loadRuntimeEnv();
+    const wsBase = resolveWsBase();
+    if (this.socket || wsBase === "") return;
     this.connecting = true;
     this.emit();
-    const socket = io(WS_BASE, {
+    const socket = io(wsBase, {
       transports: ["websocket", "polling"],
       reconnection: true,
       forceNew: true,

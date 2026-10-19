@@ -335,6 +335,17 @@ npm run preview
 1. **Server:** run `npm start` (or `npm run build && node dist/index.js`) behind any Node-capable host (Heroku, Railway, Render, a PM2 process, etc.). Set `PORT` to the port your provider expects, and configure CORS for your frontend origin.
 2. **Client:** deploy `client/dist/` to any static host (Vercel, Netlify, GitHub Pages, S3). Point the client's Socket.IO connection at your deployed server's URL.
 
+### Run with Docker (client + server)
+
+`docker compose up --build` starts both the server (`:4000`) and the client (`:5173`). To point the client at a different server, change one line in `.env` and restart — **no rebuild**:
+
+```dotenv
+# .env
+VITE_WS_URL=https://your-server.example.com
+```
+
+The nginx container rewrites `/env.json` on startup, so the browser picks up the new address.
+
 ---
 
 ## Troubleshooting
