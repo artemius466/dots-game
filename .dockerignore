@@ -1,0 +1,12 @@
+# Kept out of the docker build contexts (server/ and client/).
+node_modules
+dist
+*.tsbuildinfo
+.git
+.env
+.env.local
+.env.*.local
+*.log
+tmp
+temp
+.DS_Store
