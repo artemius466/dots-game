@@ -1,3 +1,7 @@
+yes, this is vibecoded
+i mainly wanted to see what can my local ai do
+yeah
+
 # Точки — Dots (Multiplayer)
 
 A real-time multiplayer implementation of the classic **"Dots"** (Russian: *Точки*) paper game.
